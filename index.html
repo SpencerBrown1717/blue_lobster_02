@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Free Motion — Let your lobster fly drones.</title>
+<meta name="description" content="The open-source brain that turns a Telegram message into a drone mission. One Pi. Two models. Your fleet." />
+<meta name="theme-color" content="#f5efe0" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0e0e0e" media="(prefers-color-scheme: dark)" />
+<meta name="color-scheme" content="light dark" />
+
+<meta property="og:title" content="Free Motion" />
+<meta property="og:description" content="Let your lobster fly drones. Open source. MIT licensed." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Free Motion" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Free Motion" />
+<meta name="twitter:description" content="Let your lobster fly drones. Open source. MIT licensed." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%231d4ed8'/><circle cx='12' cy='14' r='2' fill='white'/><circle cx='20' cy='14' r='2' fill='white'/><path d='M 9 21 Q 16 26 23 21' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/></svg>" />
+
+<style>
+  :root {
+    --bg:        #f5efe0;
+    --paper:     #fbf6e9;
+    --ink:       #18181b;
+    --ink-soft:  #4b4b51;
+    --ink-mute:  #8a8a85;
+    --rule:      #d8d2c4;
+    --rule-soft: #e7e2d3;
+    --blue:      #1d4ed8;
+    --blue-deep: #1e3a8a;
+    --blue-soft: #dbeafe;
+    --coral:     #e85a3a;
+    --shadow-1:  0 1px 0 rgba(24,24,27,.04), 0 8px 24px rgba(24,24,27,.06);
+    --shadow-2:  0 1px 0 rgba(24,24,27,.05), 0 18px 48px rgba(24,24,27,.10);
+    --serif:     "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+    --sans:      "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono:      "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0e0e0e;
+      --paper:     #181818;
+      --ink:       #f4eedf;
+      --ink-soft:  #b1b1ab;
+      --ink-mute:  #6f6f6a;
+      --rule:      #2a2a28;
+      --rule-soft: #1f1f1d;
+      --blue:      #6ea0ff;
+      --blue-deep: #93c5fd;
+      --blue-soft: #15233f;
+      --coral:     #ff7a5b;
+      --shadow-1:  0 1px 0 rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+      --shadow-2:  0 1px 0 rgba(0,0,0,.4), 0 18px 48px rgba(0,0,0,.55);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(29,78,216,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgba(232,90,58,0.06), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; }
+  ::selection { background: var(--ink); color: var(--bg); }
+
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+  .wrap-narrow { max-width: 760px; margin: 0 auto; padding: 0 28px; }
+
+  .skip-link {
+    position: absolute; left: 12px; top: -48px;
+    background: var(--ink); color: var(--bg);
+    padding: 10px 14px; border-radius: 8px; z-index: 30;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .skip-link:focus { top: 12px; }
+
+  /* ───────── grain overlay ───────── */
+  .grain {
+    pointer-events: none;
+    position: fixed; inset: 0;
+    z-index: 1;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  @media (prefers-color-scheme: dark) {
+    .grain { opacity: 0.5; mix-blend-mode: screen; }
+  }
+
+  /* ───────── header ───────── */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(150%) blur(14px);
+    -webkit-backdrop-filter: saturate(150%) blur(14px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    max-width: 1080px; margin: 0 auto;
+    padding: 14px 28px;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .brand-mark { width: 26px; height: 26px; flex: 0 0 auto; }
+  .header-links {
+    display: flex; align-items: center; gap: 20px;
+    font-family: var(--mono);
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .header-links a:hover, .header-links a:focus-visible { color: var(--blue); }
+  .header-links .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 999px;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+  .header-links .pill::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--coral);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--coral) 25%, transparent);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .6; transform: scale(1.2); }
+  }
+  @media (max-width: 640px) {
+    .header-links a:not(.pill) { display: none; }
+  }
+
+  /* ───────── hero ───────── */
+  .hero {
+    position: relative;
+    padding: 80px 0 40px;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 880px) {
+    .hero { padding: 56px 0 24px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 28px; }
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 28px;
+  }
+  .eyebrow .ver {
+    color: var(--ink); padding: 3px 8px; border: 1px solid var(--rule);
+    border-radius: 4px; letter-spacing: 0.04em;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 350;
+    font-size: clamp(56px, 9.5vw, 112px);
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    margin: 0 0 24px;
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--blue);
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  h1 .arrow-glyph {
+    display: inline-block;
+    font-family: var(--mono);
+    font-style: normal;
+    font-weight: 400;
+    color: var(--coral);
+    font-size: 0.5em;
+    transform: translateY(-0.4em);
+    margin: 0 0.05em;
+  }
+
+  .blurb {
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 32px;
+    max-width: 38ch;
+  }
+  .blurb b { color: var(--ink); font-weight: 600; }
+
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 46px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    box-shadow: var(--shadow-1);
+    transition: transform .18s ease, background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+    cursor: pointer;
+  }
+  .btn:hover, .btn:focus-visible {
+    background: var(--blue); border-color: var(--blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); box-shadow: none; }
+  .btn.ghost:hover, .btn.ghost:focus-visible {
+    background: var(--paper); border-color: var(--ink); color: var(--ink);
+    transform: translateY(-1px);
+  }
+  .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .btn .star-count {
+    font-family: var(--mono);
+    font-weight: 500;
+    padding-left: 10px;
+    margin-left: 4px;
+    border-left: 1px solid color-mix(in oklab, var(--bg) 30%, transparent);
+    opacity: 0.85;
+  }
+
+  /* ───────── lobster stage ───────── */
+  .lobster-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 440px;
+    margin-left: auto;
+  }
+  .lobster-stage::before {
+    content: "";
+    position: absolute; inset: 6%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, rgba(29,78,216,0.12), transparent 65%);
+    z-index: 0;
+  }
+  .lobster-stage svg { position: relative; z-index: 1; width: 100%; height: 100%; }
+
+  .lobster { animation: float 5s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  .mini-drone { animation: drone-bob 2.6s ease-in-out infinite; transform-box: fill-box; }
+  @keyframes drone-bob {
+    0%, 100% { transform: translate(110px, 28px) rotate(-4deg); }
+    50%      { transform: translate(110px, 22px) rotate(4deg); }
+  }
+  .scout-drone { animation: scout-orbit 9s ease-in-out infinite; transform-box: fill-box; transform-origin: 110px 110px; }
+  @keyframes scout-orbit {
+    0%   { transform: translate(0,0) rotate(0deg); }
+    50%  { transform: translate(-6px,4px) rotate(8deg); }
+    100% { transform: translate(0,0) rotate(0deg); }
+  }
+  .prop { animation: spin 0.32s linear infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .beam { stroke-dasharray: 3 4; animation: dash 1.6s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset: -14; } }
+  .blink { animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 90% { opacity: 1; } 95% { opacity: 0.1; } }
+
+  /* ───────── marquee ───────── */
+  .marquee {
+    overflow: hidden;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    padding: 14px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 56px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee-track {
+    display: flex; gap: 56px;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+  }
+  .marquee span { display: inline-flex; align-items: center; gap: 14px; white-space: nowrap; }
+  .marquee span::after { content: "✦"; color: var(--coral); }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+  /* ───────── sections ───────── */
+  section { padding: 96px 0; position: relative; z-index: 2; }
+  @media (max-width: 720px) { section { padding: 72px 0; } }
+
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+    margin-bottom: 48px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-head h2 {
+    font-family: var(--serif);
+    font-weight: 350;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.0;
+    letter-spacing: -0.035em;
+    margin: 0;
+    font-variation-settings: "opsz" 144;
+  }
+  .section-head h2 em { font-style: italic; color: var(--blue); font-weight: 400; }
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .section-tag::before { content: "§ "; color: var(--coral); }
+
+  /* ───────── demo (telegram chat) ───────── */
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (max-width: 880px) { .demo-grid { grid-template-columns: 1fr; gap: 32px; } }
+
+  .demo-copy h3 {
+    font-family: var(--serif);
+    font-weight: 350;
+    font-size: 32px;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin: 0 0 18px;
+  }
+  .demo-copy h3 em { font-style: italic; color: var(--blue); }
+  .demo-copy p { color: var(--ink-soft); margin: 0 0 14px; max-width: 44ch; }
+  .demo-copy ul {
+    list-style: none; padding: 0; margin: 22px 0 0;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .demo-copy ul li {
+    display: flex; gap: 12px; padding: 8px 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .demo-copy ul li::before {
+    content: "→"; color: var(--coral); flex: 0 0 auto;
+  }
+
+  .phone {
+    width: 100%; max-width: 360px;
+    margin: 0 auto;
+    aspect-ratio: 9 / 18.5;
+    background: linear-gradient(180deg, #1c1c1f 0%, #0c0c0e 100%);
+    border-radius: 38px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 1.5px #2a2a2d,
+      var(--shadow-2),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .phone::after { /* notch */
+    content: ""; position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 86px; height: 22px; background: #0a0a0c; border-radius: 12px;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    background: #0c1116;
+    border-radius: 28px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    color: #e7eaed;
+    font-family: var(--sans);
+    position: relative;
+  }
+  .screen-status {
+    height: 42px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-family: var(--mono); font-size: 11px;
+    color: #9aa3ac;
+  }
+  .screen-status .right { display: flex; gap: 5px; align-items: center; }
+  .screen-status .right span { width: 4px; height: 4px; border-radius: 50%; background: #9aa3ac; }
+  .screen-status .right span:nth-child(1) { height: 7px; }
+  .screen-status .right span:nth-child(2) { height: 9px; }
+  .screen-status .right span:nth-child(3) { height: 11px; }
+
+  .chat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1a2129;
+    background: #0f161d;
+  }
+  .chat-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--blue); display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .chat-name { font-size: 14px; font-weight: 600; }
+  .chat-state { font-size: 11px; color: #6da6ff; font-family: var(--mono); }
+
+  .chat-body {
+    flex: 1; padding: 14px 14px 8px;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow: hidden;
+    background:
+      radial-gradient(600px 300px at 50% 100%, rgba(29,78,216,0.15), transparent 70%),
+      #0c1116;
+  }
+
+  .bubble {
+    max-width: 78%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: pop 0.35s ease forwards;
+  }
+  .bubble.user { align-self: flex-end; background: #2563eb; color: white; border-bottom-right-radius: 4px; }
+  .bubble.bot  { align-self: flex-start; background: #1a2129; color: #e7eaed; border-bottom-left-radius: 4px; }
+  .bubble .meta { display: block; font-family: var(--mono); font-size: 10px; opacity: 0.65; margin-top: 3px; }
+  .bubble.b1 { animation-delay: 0.4s; }
+  .bubble.b2 { animation-delay: 1.4s; }
+  .bubble.b3 { animation-delay: 2.4s; }
+  .bubble.b4 { animation-delay: 3.6s; }
+  .bubble.b5 { animation-delay: 4.6s; }
+  .bubble.b6 { animation-delay: 5.6s; }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)   scale(1); }
+  }
+
+  .typing { display: inline-flex; gap: 3px; padding: 0 2px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: #9aa3ac; opacity: 0.5; animation: typing 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.15s; }
+  .typing i:nth-child(3) { animation-delay: 0.30s; }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-3px); opacity: 1; }
+  }
+
+  .photo-card {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 8px;
+    margin-top: 4px;
+    background:
+      linear-gradient(135deg, #3d4d2a 0%, #5a7234 50%, #3d4d2a 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-card::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(120px 60px at 30% 60%, rgba(101,67,33,0.6), transparent 70%),
+      radial-gradient(80px 40px at 70% 70%, rgba(101,67,33,0.5), transparent 70%);
+  }
+  .photo-card .marker {
+    position: absolute; width: 18px; height: 18px;
+    border: 2px solid #ff5252; border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(255,82,82,0.2);
+  }
+  .photo-card .m1 { top: 35%; left: 28%; animation: ping 2s ease-out infinite; }
+  .photo-card .m2 { top: 55%; left: 52%; animation: ping 2s ease-out 0.3s infinite; }
+  .photo-card .m3 { top: 42%; left: 70%; animation: ping 2s ease-out 0.6s infinite; }
+  @keyframes ping { 0% { transform: scale(1); } 70% { transform: scale(1.4); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+  .photo-card .label {
+    position: absolute; top: 8px; left: 10px;
+    font-family: var(--mono); font-size: 10px;
+    color: white; background: rgba(0,0,0,0.5);
+    padding: 2px 6px; border-radius: 3px;
+  }
+
+  .input-bar {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px 14px;
+    background: #0f161d;
+    border-top: 1px solid #1a2129;
+  }
+  .input-bar .field {
+    flex: 1;
+    background: #1a2129;
+    border-radius: 18px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #6f7882;
+    font-family: var(--mono);
+  }
+  .input-bar .send {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blue); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* ───────── flow ───────── */
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+  .flow-step {
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 22px 18px;
+    background: var(--paper);
+    box-shadow: var(--shadow-1);
+    position: relative;
+  }
+  .flow-step .num {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-mute); letter-spacing: 0.1em;
+  }
+  .flow-step .icon { font-size: 30px; margin: 8px 0 12px; line-height: 1; }
+  .flow-step h4 { font-family: var(--serif); font-weight: 400; font-size: 22px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .flow-step p { font-size: 14px; color: var(--ink-soft); margin: 0; }
+  .flow-step code {
+    display: inline-block; margin-top: 10px;
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg); border: 1px solid var(--rule);
+    padding: 3px 7px; border-radius: 4px;
+    color: var(--ink);
+  }
+  .arrow {
+    align-self: center; color: var(--ink-mute);
+    font-family: var(--mono); font-size: 22px;
+  }
+  @media (max-width: 720px) {
+    .flow { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); padding: 4px 0; justify-self: center; }
+  }
+
+  /* ───────── architecture ───────── */
+  .arch {
+    border: 1px solid var(--rule);
+    border-radius: 18px;
+    background: var(--paper);
+    padding: 32px;
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+  }
+  .arch svg { width: 100%; height: auto; color: var(--ink); }
+  .arch svg .card-fill { fill: var(--paper); }
+  .arch svg .bg-fill   { fill: var(--bg); }
+  .arch svg .ink-soft  { fill: var(--ink-soft); }
+  .arch svg .ink       { fill: var(--ink); }
+  .arch svg .blue      { fill: var(--blue); }
+  .arch svg .blue-deep { fill: var(--blue-deep); stroke: var(--blue-deep); }
+  .arch svg text       { fill: currentColor; }
+  .arch svg .pi-stroke { stroke: var(--blue-deep); }
+  .arch svg .blue-soft-fill { fill: var(--blue-soft); }
+  .arch svg .coral-fill { fill: #fee2c6; }
+  .arch svg .coral-stroke { stroke: var(--coral); }
+  @media (prefers-color-scheme: dark) {
+    .arch svg .coral-fill { fill: #3a2419; }
+  }
+  .arch-legend {
+    margin-top: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .arch-legend .item { display: flex; gap: 10px; align-items: flex-start; }
+  .arch-legend .swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; margin-top: 3px; }
+
+  /* ───────── code panel ───────── */
+  .code-grid {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 36px;
+    align-items: center;
+  }
+  @media (max-width: 880px) { .code-grid { grid-template-columns: 1fr; gap: 28px; } }
+
+  .code-copy h3 {
+    font-family: var(--serif);
+    font-weight: 350;
+    font-size: 32px;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin: 0 0 18px;
+  }
+  .code-copy h3 em { font-style: italic; color: var(--blue); }
+  .code-copy p { color: var(--ink-soft); margin: 0 0 14px; max-width: 42ch; }
+
+  .code-panel {
+    background: #18181b;
+    border-radius: 14px;
+    border: 1px solid #2a2a2d;
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+    font-family: var(--mono);
+  }
+  @media (prefers-color-scheme: dark) {
+    .code-panel { background: #050505; border-color: #232323; }
+  }
+  .code-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #2a2a2d;
+    color: #9aa3ac;
+    font-size: 12px;
+  }
+  .code-bar .dots { display: flex; gap: 6px; margin-right: 8px; }
+  .code-bar .dots i { width: 11px; height: 11px; border-radius: 50%; background: #2a2a2d; }
+  .code-bar .dots i:nth-child(1) { background: #ff5f56; }
+  .code-bar .dots i:nth-child(2) { background: #ffbd2e; }
+  .code-bar .dots i:nth-child(3) { background: #27c93f; }
+  .code-bar .file { color: #cfd3d8; }
+  .code-bar .lang { margin-left: auto; color: #6f7882; font-size: 11px; }
+
+  .code-panel pre {
+    margin: 0; padding: 22px 24px;
+    color: #e7eaed; font-size: 13.5px; line-height: 1.65;
+    overflow-x: auto;
+    background:
+      linear-gradient(180deg, transparent, rgba(29,78,216,0.04));
+  }
+  .code-panel pre .kw { color: #ff7eb6; }
+  .code-panel pre .fn { color: #8ec4ff; }
+  .code-panel pre .str { color: #a6e22e; }
+  .code-panel pre .num { color: #d19a66; }
+  .code-panel pre .com { color: #6f7882; font-style: italic; }
+  .code-panel pre .dec { color: #ffbd2e; }
+  .code-panel pre .var { color: #e7eaed; }
+  .code-panel pre .punct { color: #9aa3ac; }
+
+  /* ───────── parts list ───────── */
+  .parts {
+    list-style: none; padding: 0; margin: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .parts li {
+    display: grid;
+    grid-template-columns: 56px 220px 1fr auto;
+    gap: 18px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: baseline;
+    transition: padding-left 0.25s ease, background 0.25s ease;
+  }
+  .parts li:hover {
+    padding-left: 12px;
+    background: linear-gradient(90deg, var(--paper), transparent 80%);
+  }
+  .parts .num { font-family: var(--mono); font-size: 12px; color: var(--ink-mute); }
+  .parts h4 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 22px; letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .parts h4 em { font-style: italic; color: var(--blue); }
+  .parts p { color: var(--ink-soft); margin: 0; font-size: 15px; }
+  .parts .tag {
+    font-family: var(--mono); font-size: 11px;
+    padding: 4px 8px; border-radius: 4px;
+    color: var(--ink-soft); border: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  @media (max-width: 720px) {
+    .parts li { grid-template-columns: 36px 1fr; }
+    .parts li > p { grid-column: 2; }
+    .parts li > .tag { grid-column: 2; justify-self: start; }
+  }
+
+  /* ───────── faq ───────── */
+  .faq details {
+    border-top: 1px solid var(--rule);
+    padding: 18px 0;
+  }
+  .faq details:last-child { border-bottom: 1px solid var(--rule); }
+  .faq summary {
+    list-style: none; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 21px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; font-family: var(--mono); font-weight: 400; color: var(--blue);
+    font-size: 28px; line-height: 1;
+    transition: transform 0.25s ease;
+  }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq .answer {
+    padding-top: 12px;
+    color: var(--ink-soft);
+    font-size: 16px;
+    max-width: 64ch;
+  }
+  .faq .answer code {
+    font-family: var(--mono); font-size: 13px;
+    background: var(--paper); border: 1px solid var(--rule);
+    padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ───────── sister ───────── */
+  .sister {
+    border: 1px solid var(--rule);
+    border-radius: 18px;
+    padding: 36px 40px;
+    background: var(--blue-soft);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    box-shadow: var(--shadow-1);
+    position: relative;
+    overflow: hidden;
+  }
+  .sister::before {
+    content: "🦞"; position: absolute;
+    right: -30px; bottom: -50px;
+    font-size: 220px; opacity: 0.06;
+    transform: rotate(-15deg);
+    pointer-events: none;
+  }
+  .sister-text { position: relative; z-index: 1; }
+  .sister-text small {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--blue); letter-spacing: 0.06em; text-transform: uppercase;
+    display: block; margin-bottom: 8px;
+  }
+  .sister-text h3 {
+    font-family: var(--serif); font-weight: 350;
+    font-size: 28px; letter-spacing: -0.025em;
+    color: var(--blue-deep);
+    margin: 0 0 6px;
+  }
+  .sister-text h3 em { font-style: italic; }
+  .sister-text p { margin: 0; color: var(--blue-deep); font-size: 15px; max-width: 44ch; opacity: 0.85; }
+  @media (prefers-color-scheme: dark) {
+    .sister-text h3, .sister-text p { color: var(--blue-deep); }
+    .sister-text small { color: var(--blue); }
+  }
+  @media (max-width: 720px) {
+    .sister { grid-template-columns: 1fr; padding: 28px; }
+  }
+
+  /* ───────── final cta ───────── */
+  .final-cta {
+    text-align: center;
+    padding: 120px 0 96px;
+    border-top: 1px solid var(--rule);
+  }
+  .final-cta h2 {
+    font-family: var(--serif);
+    font-weight: 350;
+    font-size: clamp(48px, 8vw, 96px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 0 0 20px;
+  }
+  .final-cta h2 em { font-style: italic; color: var(--blue); }
+  .final-cta p { color: var(--ink-soft); font-size: 18px; max-width: 46ch; margin: 0 auto 36px; }
+  .final-cta .ctas { justify-content: center; }
+
+  /* ───────── footer ───────── */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 48px 0 56px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .footer-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .footer-row a { color: var(--ink-soft); }
+  .footer-row a:hover, .footer-row a:focus-visible { color: var(--blue); }
+  .footer-row nav { display: flex; gap: 18px; flex-wrap: wrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
+
+<header>
+  <div class="header-row">
+    <a href="#top" class="brand" aria-label="Free Motion home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="#1d4ed8"></circle>
+        <circle cx="12" cy="14" r="2" fill="white"></circle>
+        <circle cx="20" cy="14" r="2" fill="white"></circle>
+        <path d="M 9 21 Q 16 26 23 21" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"></path>
+      </svg>
+      <span>Free&nbsp;Motion</span>
+    </a>
+    <nav class="header-links" aria-label="Primary">
+      <a href="#how">How it works</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#parts">Stack</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/free-motion/free-motion" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      <a href="#" class="pill" aria-label="Status: online">v0.3.2</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ───────── HERO ───────── -->
+  <section class="hero" id="top" aria-labelledby="page-title">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">
+            <span class="dot" aria-hidden="true"></span>
+            <span>Open beta</span>
+            <span class="ver">v0.3.2</span>
+            <span>· MIT licensed</span>
+          </p>
+
+          <h1 id="page-title">
+            Let your<br>
+            <em>lobster</em> <span class="arrow-glyph">↗</span><br>
+            fly drones.
+          </h1>
+
+          <p class="blurb">
+            Free Motion is the open-source brain that turns a <b>Telegram message</b> into
+            a <b>drone mission</b>. One Pi. Two models. Your fleet.
+          </p>
+
+          <div class="ctas">
+            <a href="https://github.com/free-motion/free-motion" class="btn" target="_blank" rel="noopener noreferrer" aria-label="Open the GitHub repository">
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+              </svg>
+              <span>Star on GitHub</span>
+              <span class="star-count">★ 1.4k</span>
+            </a>
+            <a href="#how" class="btn ghost">Read the docs →</a>
+          </div>
+        </div>
+
+        <div class="lobster-stage" aria-hidden="true">
+          <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Blue lobster piloting a quadcopter drone">
+            <!-- main drone above -->
+            <g class="mini-drone">
+              <line x1="-22" y1="0" x2="22" y2="0" stroke="#1e3a8a" stroke-width="2.4" stroke-linecap="round"></line>
+              <line x1="0" y1="-16" x2="0" y2="16" stroke="#1e3a8a" stroke-width="2.4" stroke-linecap="round"></line>
+              <ellipse class="prop" cx="-22" cy="0" rx="9" ry="2.4" fill="#3b82f6" opacity="0.85"></ellipse>
+              <ellipse class="prop" cx="22"  cy="0" rx="9" ry="2.4" fill="#3b82f6" opacity="0.85"></ellipse>
+              <ellipse class="prop" cx="0" cy="-16" rx="2.4" ry="9" fill="#3b82f6" opacity="0.85"></ellipse>
+              <ellipse class="prop" cx="0" cy="16"  rx="2.4" ry="9" fill="#3b82f6" opacity="0.85"></ellipse>
+              <rect x="-5" y="-5" width="10" height="10" rx="2" fill="#1e3a8a"></rect>
+              <circle class="blink" cx="0" cy="-2" r="1.5" fill="#e85a3a"></circle>
+            </g>
+
+            <!-- second tiny scout drone -->
+            <g class="scout-drone">
+              <g transform="translate(178 50)">
+                <line x1="-9" y1="0" x2="9" y2="0" stroke="#1e3a8a" stroke-width="1.5" stroke-linecap="round"></line>
+                <line x1="0" y1="-7" x2="0" y2="7" stroke="#1e3a8a" stroke-width="1.5" stroke-linecap="round"></line>
+                <ellipse class="prop" cx="-9" cy="0" rx="4" ry="1.2" fill="#3b82f6" opacity="0.7"></ellipse>
+                <ellipse class="prop" cx="9"  cy="0" rx="4" ry="1.2" fill="#3b82f6" opacity="0.7"></ellipse>
+                <ellipse class="prop" cx="0" cy="-7" rx="1.2" ry="4" fill="#3b82f6" opacity="0.7"></ellipse>
+                <ellipse class="prop" cx="0" cy="7"  rx="1.2" ry="4" fill="#3b82f6" opacity="0.7"></ellipse>
+                <rect x="-2.5" y="-2.5" width="5" height="5" rx="1" fill="#1e3a8a"></rect>
+              </g>
+            </g>
+
+            <!-- control beam (animated dashed) -->
+            <line class="beam" x1="110" y1="62" x2="110" y2="82" stroke="#1d4ed8" stroke-width="1.5" opacity="0.6"></line>
+
+            <g class="lobster">
+              <!-- antennae -->
+              <path d="M 96 88 Q 78 60 70 65" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M 124 88 Q 142 60 150 65" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+              <circle cx="70" cy="65" r="2.4" fill="#e85a3a"></circle>
+              <circle cx="150" cy="65" r="2.4" fill="#1e3a8a"></circle>
+
+              <!-- claw arms -->
+              <path d="M 96 105 Q 70 100 50 95" stroke="#1e3a8a" stroke-width="3" fill="none" stroke-linecap="round"></path>
+              <path d="M 124 105 Q 150 100 170 95" stroke="#1e3a8a" stroke-width="3" fill="none" stroke-linecap="round"></path>
+
+              <!-- left claw (holding "transmitter") -->
+              <ellipse cx="42" cy="92" rx="18" ry="13" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+              <path d="M 32 84 Q 26 88 30 96" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M 32 100 Q 26 96 30 88" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+              <!-- transmitter button on claw -->
+              <circle cx="42" cy="92" r="3" fill="#fbf6e9" stroke="#1e3a8a" stroke-width="1"></circle>
+              <circle class="blink" cx="42" cy="92" r="1.2" fill="#e85a3a"></circle>
+
+              <!-- right claw -->
+              <ellipse cx="178" cy="92" rx="18" ry="13" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+              <path d="M 188 84 Q 194 88 190 96" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M 188 100 Q 194 96 190 88" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></path>
+
+              <!-- body / carapace -->
+              <ellipse cx="110" cy="105" rx="22" ry="26" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+              <ellipse cx="102" cy="96" rx="6" ry="9" fill="#60a5fa" opacity="0.6"></ellipse>
+
+              <!-- aviator goggles -->
+              <path d="M 92 90 Q 110 84 128 90" fill="none" stroke="#1e3a8a" stroke-width="1.5" stroke-linecap="round"></path>
+              <circle cx="102" cy="92" r="5.5" fill="#0c1e4a" stroke="#1e3a8a" stroke-width="1.5"></circle>
+              <circle cx="118" cy="92" r="5.5" fill="#0c1e4a" stroke="#1e3a8a" stroke-width="1.5"></circle>
+              <circle cx="103" cy="90.5" r="1.4" fill="#fbf6e9"></circle>
+              <circle cx="119" cy="90.5" r="1.4" fill="#fbf6e9"></circle>
+              <line x1="107.5" y1="92" x2="112.5" y2="92" stroke="#1e3a8a" stroke-width="1.5"></line>
+
+              <!-- legs -->
+              <line x1="92"  y1="110" x2="78"  y2="118" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="91"  y1="118" x2="76"  y2="128" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="91"  y1="125" x2="78"  y2="138" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="128" y1="110" x2="142" y2="118" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="129" y1="118" x2="144" y2="128" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="129" y1="125" x2="142" y2="138" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round"></line>
+
+              <!-- tail segments -->
+              <ellipse cx="110" cy="138" rx="20" ry="9" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+              <ellipse cx="110" cy="154" rx="17" ry="8" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+              <ellipse cx="110" cy="168" rx="13" ry="7" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"></ellipse>
+
+              <!-- tail fan -->
+              <path d="M 96 173 L 86 188 L 100 184 L 110 190 L 120 184 L 134 188 L 124 173 Z" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round"></path>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── MARQUEE ───────── -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>MIT licensed</span>
+      <span>Raspberry Pi 4 / 5</span>
+      <span>Python 3.11+</span>
+      <span>MAVLink ready</span>
+      <span>Local-first inference</span>
+      <span>Telegram bot</span>
+      <span>Two-model agent</span>
+      <span>BYO drone</span>
+      <span>Offline capable</span>
+      <!-- duplicate for loop -->
+      <span>MIT licensed</span>
+      <span>Raspberry Pi 4 / 5</span>
+      <span>Python 3.11+</span>
+      <span>MAVLink ready</span>
+      <span>Local-first inference</span>
+      <span>Telegram bot</span>
+      <span>Two-model agent</span>
+      <span>BYO drone</span>
+      <span>Offline capable</span>
+    </div>
+  </div>
+
+  <!-- ───────── DEMO ───────── -->
+  <section id="demo">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>From thumb tap to <em>takeoff</em>.</h2>
+        <span class="section-tag">01 · Demo</span>
+      </div>
+
+      <div class="demo-grid">
+        <div class="demo-copy">
+          <h3>Text it like a friend. <em>It just goes.</em></h3>
+          <p>
+            No app to install. No ground station to boot. No flight plan to draw.
+            Open Telegram, type what you want, watch the lobster do the rest.
+          </p>
+          <p>
+            Replies arrive with annotated photos, telemetry, and a flight log.
+            Every mission is a chat thread you can scroll back through.
+          </p>
+          <ul>
+            <li><span>Natural-language commands → MAVLink waypoints</span></li>
+            <li><span>Inline photo replies with object detection</span></li>
+            <li><span>Auto return-to-home if the chat goes quiet</span></li>
+          </ul>
+        </div>
+
+        <div class="phone" role="img" aria-label="Animated demo of a Telegram chat with the Free Motion bot">
+          <div class="screen">
+            <div class="screen-status">
+              <span>9:41</span>
+              <div class="right">
+                <span></span><span></span><span></span>
+                <span style="background:#27c93f; width:6px; height:6px; border-radius:50%; margin-left:6px;"></span>
+              </div>
+            </div>
+            <div class="chat-header">
+              <div class="chat-avatar">🦞</div>
+              <div>
+                <div class="chat-name">Free Motion</div>
+                <div class="chat-state">● online · armed</div>
+              </div>
+            </div>
+            <div class="chat-body">
+              <div class="bubble user b1">scout the south field<span class="meta">9:41</span></div>
+              <div class="bubble bot  b2">
+                <span class="typing"><i></i><i></i><i></i></span>
+              </div>
+              <div class="bubble bot  b3">🚁 launching from pad A · est. 4 min<span class="meta">9:41</span></div>
+              <div class="bubble bot  b4">
+                <div class="photo-card">
+                  <div class="label">grid 03 · 18 m AGL</div>
+                  <div class="marker m1"></div>
+                  <div class="marker m2"></div>
+                  <div class="marker m3"></div>
+                </div>
+                spotted 3 deer near the fence line<span class="meta">9:45</span>
+              </div>
+              <div class="bubble user b5">nice. rtb<span class="meta">9:45</span></div>
+              <div class="bubble bot  b6">✓ returning home · battery 62%<span class="meta">9:45</span></div>
+            </div>
+            <div class="input-bar">
+              <div class="field">Message</div>
+              <div class="send">↑</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── HOW IT WORKS ───────── -->
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Three moving parts. <em>That's it.</em></h2>
+        <span class="section-tag">02 · How it works</span>
+      </div>
+      <div class="flow" aria-label="Three step flow">
+        <div class="flow-step">
+          <span class="num">STEP 01</span>
+          <div class="icon" aria-hidden="true">📱</div>
+          <h4>You text Telegram</h4>
+          <p>Plain English. Photos. Voice notes. Whatever feels natural.</p>
+          <code>"scout the field"</code>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <span class="num">STEP 02</span>
+          <div class="icon" aria-hidden="true">🦞</div>
+          <h4>Pi runs two models</h4>
+          <p>One plans the mission. The other watches the camera and reports back.</p>
+          <code>plan() → see() → act()</code>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <span class="num">STEP 03</span>
+          <div class="icon" aria-hidden="true">🚁</div>
+          <h4>Drone flies itself</h4>
+          <p>MAVLink waypoints, live telemetry, photos and findings sent right back to chat.</p>
+          <code>flight.complete</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── ARCHITECTURE ───────── -->
+  <section id="architecture">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>The whole loop, <em>on one chip</em>.</h2>
+        <span class="section-tag">03 · Architecture</span>
+      </div>
+
+      <div class="arch">
+        <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" aria-labelledby="arch-title">
+          <title id="arch-title">Free Motion architecture diagram</title>
+
+          <!-- background grid -->
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.08"/>
+            </pattern>
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <path d="M 0 0 L 9 3 L 0 6 z" fill="#1d4ed8"/>
+            </marker>
+          </defs>
+          <rect width="880" height="360" fill="url(#grid)" />
+
+          <!-- phone -->
+          <g transform="translate(40 110)">
+            <rect class="card-fill" width="120" height="160" rx="16" stroke-width="2" style="stroke: var(--blue-deep);"/>
+            <rect x="14" y="22" width="92" height="116" rx="6" fill="#0c1116"/>
+            <circle cx="60" cy="148" r="4" fill="none" stroke-width="1.5" style="stroke: var(--blue-deep);"/>
+            <text x="60" y="80" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" style="fill:#6da6ff;">Telegram</text>
+            <text x="60" y="98" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" style="fill:#e7eaed;">scout the field</text>
+            <text x="60" y="200" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="11" font-weight="600" style="fill: var(--blue-deep);">YOUR PHONE</text>
+          </g>
+
+          <!-- arrow phone -> pi -->
+          <line x1="170" y1="190" x2="305" y2="190" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrowhead)" style="stroke: var(--blue);"/>
+          <text x="237" y="180" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" style="fill: var(--ink-mute);">https</text>
+
+          <!-- raspberry pi (the brain) -->
+          <g transform="translate(310 90)">
+            <rect class="card-fill" width="260" height="200" rx="14" stroke-width="2.5" style="stroke: var(--blue-deep);"/>
+            <text x="130" y="28" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="11" font-weight="600" letter-spacing="1" style="fill: var(--blue-deep);">RASPBERRY PI</text>
+
+            <!-- bot -->
+            <rect class="blue-soft-fill" x="16" y="44" width="100" height="44" rx="8" stroke-width="1.5" style="stroke: var(--blue);"/>
+            <text x="66" y="62" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="600" style="fill: var(--blue-deep);">bot.py</text>
+            <text x="66" y="76" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" opacity="0.75" style="fill: var(--blue-deep);">listens · replies</text>
+
+            <!-- mission control -->
+            <rect class="coral-fill" x="16" y="100" width="100" height="44" rx="8" stroke-width="1.5" style="stroke: var(--coral);"/>
+            <text x="66" y="118" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="600" style="fill: var(--coral);">mission</text>
+            <text x="66" y="132" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" opacity="0.75" style="fill: var(--coral);">plans · decides</text>
+
+            <!-- vision -->
+            <rect class="blue-soft-fill" x="144" y="44" width="100" height="44" rx="8" stroke-width="1.5" style="stroke: var(--blue);"/>
+            <text x="194" y="62" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="600" style="fill: var(--blue-deep);">vision</text>
+            <text x="194" y="76" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" opacity="0.75" style="fill: var(--blue-deep);">describes frames</text>
+
+            <!-- mavlink -->
+            <rect class="bg-fill" x="144" y="100" width="100" height="44" rx="8" stroke-width="1.5" style="stroke: var(--ink-mute);"/>
+            <text x="194" y="118" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="600" style="fill: var(--ink);">mavlink</text>
+            <text x="194" y="132" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" opacity="0.75" style="fill: var(--ink);">flight commands</text>
+
+            <!-- internal arrows -->
+            <path d="M 116 66 L 144 66" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" style="stroke: var(--blue);"/>
+            <path d="M 66 88 L 66 100" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" style="stroke: var(--coral);"/>
+            <path d="M 116 122 L 144 122" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" style="stroke: var(--coral);"/>
+            <path d="M 194 88 L 194 100" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" style="stroke: var(--blue);"/>
+
+            <!-- camera badge -->
+            <rect x="16" y="160" width="228" height="28" rx="6" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke: var(--ink-mute);"/>
+            <text x="130" y="178" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" style="fill: var(--ink-mute);">camera · gps · imu</text>
+          </g>
+
+          <!-- arrow pi -> drone -->
+          <line x1="580" y1="190" x2="715" y2="190" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrowhead)" style="stroke: var(--blue);"/>
+          <text x="647" y="180" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" style="fill: var(--ink-mute);">serial / udp</text>
+
+          <!-- drone -->
+          <g transform="translate(720 130)">
+            <line x1="0"  y1="60" x2="120" y2="60" stroke-width="3" stroke-linecap="round" style="stroke: var(--blue-deep);"/>
+            <line x1="60" y1="0"  x2="60"  y2="120" stroke-width="3" stroke-linecap="round" style="stroke: var(--blue-deep);"/>
+            <ellipse cx="0"   cy="60" rx="18" ry="4" fill="#3b82f6" opacity="0.85"/>
+            <ellipse cx="120" cy="60" rx="18" ry="4" fill="#3b82f6" opacity="0.85"/>
+            <ellipse cx="60"  cy="0"  rx="4"  ry="18" fill="#3b82f6" opacity="0.85"/>
+            <ellipse cx="60"  cy="120" rx="4"  ry="18" fill="#3b82f6" opacity="0.85"/>
+            <rect x="48" y="48" width="24" height="24" rx="4" style="fill: var(--blue-deep);"/>
+            <circle cx="60" cy="60" r="3" style="fill: var(--coral);"/>
+            <text x="60" y="155" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="11" font-weight="600" style="fill: var(--blue-deep);">YOUR DRONE</text>
+          </g>
+
+          <!-- return loop -->
+          <path d="M 740 290 Q 440 340 170 290" fill="none" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#arrowhead)" opacity="0.6" style="stroke: var(--coral);"/>
+          <text x="440" y="332" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" opacity="0.85" style="fill: var(--coral);">photos · telemetry · findings</text>
+        </svg>
+
+        <div class="arch-legend">
+          <div class="item"><span class="swatch" style="background:#dbeafe; border:1px solid #1d4ed8;"></span><span>I/O — Telegram bot &amp; vision model</span></div>
+          <div class="item"><span class="swatch" style="background:#fee2c6; border:1px solid #e85a3a;"></span><span>Brain — mission planner</span></div>
+          <div class="item"><span class="swatch" style="background:var(--bg); border:1px solid #8a8a85;"></span><span>Bridge — MAVLink to flight controller</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── CODE ───────── -->
+  <section id="code">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Roughly <em>thirty lines</em>.</h2>
+        <span class="section-tag">04 · Hack on it</span>
+      </div>
+
+      <div class="code-grid">
+        <div class="code-copy">
+          <h3>A handful of <em>decorators</em>, your fleet at your fingertips.</h3>
+          <p>
+            Free Motion is a Python package. Plug in your Telegram token, point it at a
+            MAVLink-speaking drone, and register a handler. Everything else — chat history,
+            vision passes, return-to-home — is taken care of.
+          </p>
+          <p>
+            Want a different LLM? Swap it out. Want voice instead of text? Add a transcriber.
+            It's MIT — go nuts.
+          </p>
+        </div>
+
+        <div class="code-panel" role="figure" aria-label="Example Python code using the Free Motion library">
+          <div class="code-bar">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <span class="file">scout.py</span>
+            <span class="lang">python</span>
+          </div>
+<pre><code><span class="kw">from</span> <span class="var">freemotion</span> <span class="kw">import</span> <span class="var">Agent</span>, <span class="var">Drone</span>
+
+<span class="var">agent</span> <span class="punct">=</span> <span class="var">Agent</span><span class="punct">.</span><span class="fn">from_telegram</span><span class="punct">(</span><span class="str">"$BOT_TOKEN"</span><span class="punct">)</span>
+<span class="var">drone</span> <span class="punct">=</span> <span class="var">Drone</span><span class="punct">.</span><span class="fn">connect</span><span class="punct">(</span><span class="str">"/dev/ttyUSB0"</span><span class="punct">)</span>
+
+<span class="dec">@agent.command</span><span class="punct">(</span><span class="str">"scout"</span><span class="punct">)</span>
+<span class="kw">async def</span> <span class="fn">scout</span><span class="punct">(</span><span class="var">ctx</span><span class="punct">,</span> <span class="var">area</span>: <span class="var">str</span><span class="punct">)</span>:
+    <span class="com"># lobster, take the wheel</span>
+    <span class="kw">await</span> <span class="var">drone</span><span class="punct">.</span><span class="fn">takeoff</span><span class="punct">(</span><span class="var">altitude</span><span class="punct">=</span><span class="num">18</span><span class="punct">)</span>
+
+    <span class="kw">async for</span> <span class="var">frame</span> <span class="kw">in</span> <span class="var">drone</span><span class="punct">.</span><span class="fn">grid_search</span><span class="punct">(</span><span class="var">area</span><span class="punct">)</span>:
+        <span class="var">finding</span> <span class="punct">=</span> <span class="kw">await</span> <span class="var">agent</span><span class="punct">.</span><span class="fn">vision</span><span class="punct">(</span><span class="var">frame</span><span class="punct">)</span>
+        <span class="kw">if</span> <span class="var">finding</span><span class="punct">.</span><span class="var">interesting</span>:
+            <span class="kw">await</span> <span class="var">ctx</span><span class="punct">.</span><span class="fn">reply</span><span class="punct">(</span><span class="var">frame</span><span class="punct">,</span> <span class="var">caption</span><span class="punct">=</span><span class="var">finding</span><span class="punct">.</span><span class="var">caption</span><span class="punct">)</span>
+
+    <span class="kw">await</span> <span class="var">drone</span><span class="punct">.</span><span class="fn">return_home</span><span class="punct">()</span>
+    <span class="kw">return</span> <span class="str">"✓ rtb · battery 62%"</span>
+
+<span class="var">agent</span><span class="punct">.</span><span class="fn">run</span><span class="punct">()</span>  <span class="com"># 🦞 ✈️</span>
+</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── PARTS ───────── -->
+  <section id="parts">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What you <em>need</em>.</h2>
+        <span class="section-tag">05 · Stack</span>
+      </div>
+      <ul class="parts">
+        <li>
+          <span class="num">01</span>
+          <h4>Mission <em>Control</em></h4>
+          <p>The planner. Parses your message, decides the moves, narrates the result.</p>
+          <span class="tag">any LLM</span>
+        </li>
+        <li>
+          <span class="num">02</span>
+          <h4>Visual <em>Model</em></h4>
+          <p>Watches the camera frame by frame, describes what it sees in human words.</p>
+          <span class="tag">vision LM</span>
+        </li>
+        <li>
+          <span class="num">03</span>
+          <h4>Telegram <em>bot</em></h4>
+          <p>Your remote. Works on any phone. Voice, text, photos all supported.</p>
+          <span class="tag">@BotFather</span>
+        </li>
+        <li>
+          <span class="num">04</span>
+          <h4>Raspberry <em>Pi</em></h4>
+          <p>Runs everything locally. A Pi 4 with 4 GB is enough for the small models.</p>
+          <span class="tag">Pi 4 / 5</span>
+        </li>
+        <li>
+          <span class="num">05</span>
+          <h4>Your <em>drone</em></h4>
+          <p>Anything that speaks MAVLink. We've tested ArduPilot and PX4 builds.</p>
+          <span class="tag">MAVLink</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ───────── FAQ ───────── -->
+  <section id="faq">
+    <div class="wrap-narrow">
+      <div class="section-head">
+        <h2>Honest <em>questions</em>.</h2>
+        <span class="section-tag">06 · FAQ</span>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Is this legal where I live?</summary>
+          <div class="answer">
+            Probably partly, probably not entirely. Drone laws vary by country and altitude.
+            Free Motion doesn't override your flight controller's geofence or no-fly zones —
+            it sits on top of MAVLink, so anything your drone refuses to do, the lobster
+            won't make it do either. Read your local rules.
+          </div>
+        </details>
+        <details>
+          <summary>Why a lobster?</summary>
+          <div class="answer">
+            Free Motion is the sister project to <a href="https://openclaw.ai/">OpenClaw</a>.
+            OpenClaw started the lobster. We just gave it wings.
+          </div>
+        </details>
+        <details>
+          <summary>Does it work without internet?</summary>
+          <div class="answer">
+            Mostly. Telegram needs a connection at <em>your</em> end and at the Pi's end —
+            a hotspot is fine. The mission and vision models can run fully local with a
+            small quantized model, or you can point them at a hosted endpoint if you'd
+            rather burn API credits than RAM.
+          </div>
+        </details>
+        <details>
+          <summary>What models does it use?</summary>
+          <div class="answer">
+            By default a small open-weights LLM for planning and a tiny VLM for vision —
+            both quantized to fit on a Pi. Anything that exposes a chat-completions API
+            slots in via <code>config.yaml</code>. It's all swappable.
+          </div>
+        </details>
+        <details>
+          <summary>Can I use a webcam instead of a real drone?</summary>
+          <div class="answer">
+            Yes. There's a <code>--sim</code> flag that wires the vision model to a USB
+            webcam and stubs out flight commands. Great for hacking on the prompts before
+            you risk a propeller.
+          </div>
+        </details>
+        <details>
+          <summary>How do I contribute?</summary>
+          <div class="answer">
+            Open an issue, send a PR, or just tell us what broke. The repo has a
+            <code>HACKING.md</code> with the architecture map and where to start.
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── SISTER ───────── -->
+  <section id="sister">
+    <div class="wrap">
+      <div class="sister">
+        <div class="sister-text">
+          <small>Sister project</small>
+          <h3>Built on <em>OpenClaw</em>.</h3>
+          <p>The lobster used to just sit there. Now it flies. We owe the entire mascot, half the runtime, and most of the puns to OpenClaw.</p>
+        </div>
+        <a href="https://openclaw.ai/" class="btn ghost" target="_blank" rel="noopener noreferrer">
+          openclaw.ai →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── FINAL CTA ───────── -->
+  <section class="final-cta">
+    <div class="wrap-narrow">
+      <h2>Go fly <em>something</em>.</h2>
+      <p>Free Motion is MIT, batteries-included, and pretty fun to break. Clone the repo, plug in a Pi, send a message.</p>
+      <div class="ctas">
+        <a href="https://github.com/free-motion/free-motion" class="btn" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          Clone the repo
+        </a>
+        <a href="https://github.com/free-motion/free-motion/blob/main/HACKING.md" class="btn ghost" target="_blank" rel="noopener noreferrer">
+          Read HACKING.md →
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <div>MIT · 2026 · made by humans &amp; one blue lobster</div>
+      <nav aria-label="Footer">
+        <a href="https://github.com/free-motion/free-motion" target="_blank" rel="noopener noreferrer">github</a>
+        <a href="https://github.com/free-motion/free-motion/issues" target="_blank" rel="noopener noreferrer">issues</a>
+        <a href="https://openclaw.ai/" target="_blank" rel="noopener noreferrer">openclaw</a>
+        <a href="#top">↑ top</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
